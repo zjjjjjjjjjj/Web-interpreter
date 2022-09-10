@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pseudocode interpreter</title>
+
+    <script type="text/javascript" src="./scanner.js"></script>
+    <script type="text/javascript" src="./parser.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.5.0/css/xterm.css" />
+	<script src="https://cdn.jsdelivr.net/npm/xterm@4.5.0/lib/xterm.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/index.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/loader.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/theme-chalk/index.min.css">
+
+    <style>
+        .el-textarea>textarea {
+            font-family: consolas;
+            height: 100% !important;
+        }
+
+        html,
+        body,
+        #app,
+        .el-container,
+        .el-main>div {
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-container>
+            <el-header height="auto" style="text-align:center">
+                <h1>Pseudocode interpreter</h1>
+                <el-button @click="run">run</el-button>
+            </el-header>
+            <el-main height="auto">
+                <div ref="editor" class="main"></div>
+            </el-main>
+            <el-footer height="200px">
+                <div ref="terminal"></div>
+            </el-footer>
+        </el-container>
+    </div>
+    <script>
+        Vue.use(ELEMENT);
+        var app = new Vue({
+            el: '#app',
+            data: {
+                activeNames: ['3'],
+                dwarf2: false,
+                curLevel: 1,
+                output: '',
+                editor: null,
+                terminal: null,
+                prefix: '$ ',
+                cmd: ''
+            },
+            mounted() {
+                require.config({paths: {'vs': 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs'}});
+                window.MonacoEnvironment = {
+                    getWorkerUrl: function (workerId, label) {
+                        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+                            self.MonacoEnvironment = {
+                            baseUrl: 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min'
+                            };
+                            importScripts('https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/base/worker/workerMain.js');`
+                        )}`;
+                    }
+                };
+                require(['vs/editor/editor.main'], () => {
+                    this.editor = monaco.editor.create(this.$refs.editor, {
+                        language: "c",
+                        automaticLayout: true
+                    });
+                });
+                this.terminal = new Terminal({
+                    rendererType: "dom",
+                    rows: 10,
+                    theme: {
+                        foreground: "white",
+                        background: "#696969"
+                    }
+                });
+                this.terminal.open(this.$refs.terminal);
+                this.terminal.writeln('Welcome to the Pseudocode interpreter');
+                this.terminal.write(this.prefix);
+
+                this.terminal.onKey(e => {
+                    code = e.domEvent.which;
+                    if (code === 13){
+                        this.terminal.writeln(e.key);
+                        this.execute_cmd();
+                        this.cmd = '';
+                    }
+                    else if (code === 8) {
+                        this.terminal.write('\b \b');
+                        this.cmd = this.cmd.substring(0, this.cmd.length - 1);
+                    }
+                    else {
+                        this.cmd = this.cmd + e.key;
+                        this.terminal.write(e.key);
+                    }
+                })
+            },
+            methods: {
+                run() {
+                    this.code = this.editor?.getValue();
+                    let tokens = null;
+                    if (this.code) {
+                        let scanner = new Scanner(this.code, this.terminal);
+                        tokens = scanner.scan();
+                        console.log(tokens);
+                    }
+                    if (tokens != null) {
+                        // for (let ts of t) {
+                        //     this.terminal.writeln(ts['type'].toString() + ' ' + tss['value'].toString());
+                        // }
+                        // this.terminal.writeln('Tokenization completed');
+                        let parser = new Parser(tokens, this.terminal);
+                        let ast = parser.parse();
+                        if (ast != null) {
+                            // this.terminal.writeln('Parsing completed');
+                            // ast.dump('');
+                            ast.evaluate();
+                        }
+                        this.terminal.write(this.prefix);
+                    }
+                },
+                execute_cmd() {
+                    if (this.cmd == 'help') {
+                        this.terminal.writeln('help: show help');
+                        this.terminal.writeln('run: run the code');
+                        this.terminal.writeln('clear/cls: clear the terminal');
+                        this.terminal.write(this.prefix);
+                    }
+                    else if (this.cmd == 'run') {
+                        this.run();
+                    }
+                    else if (this.cmd == 'clear' || this.cmd == 'cls') {
+                        this.terminal.clear();
+                        this.terminal.write(this.prefix);
+                    }
+                    else {
+                        this.terminal.writeln(this.cmd + ': Command not found');
+                        this.terminal.write(this.prefix);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
