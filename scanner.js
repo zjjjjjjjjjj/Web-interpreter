@@ -27,8 +27,7 @@ class Scanner {
             let tokens = this.tokenize_line(line);
             if (tokens == null)
                 return null;
-            if (tokens.length != 0) 
-                all_tokens.push(tokens);
+            all_tokens.push(...tokens);
             this.current_line++;
         }
         if (all_tokens.length != 0) {
@@ -138,8 +137,6 @@ class Scanner {
                 return null;
             }
         }
-        if (tokens.length != 0)
-            return tokens;
-        return [];
+        return tokens;
     }
 }

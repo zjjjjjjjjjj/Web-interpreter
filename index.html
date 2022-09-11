@@ -38,6 +38,7 @@
         <el-container>
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
+                <el-switch v-model="dumpast" active-text="DumpAST"></el-switch>
                 <el-button @click="run">run</el-button>
             </el-header>
             <el-main height="auto">
@@ -54,7 +55,7 @@
             el: '#app',
             data: {
                 activeNames: ['3'],
-                dwarf2: false,
+                dumpast: false,
                 curLevel: 1,
                 output: '',
                 editor: null,
@@ -127,7 +128,7 @@
                         let ast = parser.parse();
                         if (ast != null) {
                             // this.terminal.writeln('Parsing completed');
-                            // ast.dump('');
+                            this.dumpast ? ast.dump('') : null;
                             ast.evaluate();
                         }
                         this.terminal.write(this.prefix);

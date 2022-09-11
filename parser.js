@@ -1,3 +1,5 @@
+// TODO: make an 'error' global function and simplify the code
+
 class Variable {
     constructor(value, type) {
         this.value = value;
@@ -115,31 +117,43 @@ class VarAssignAST extends AST {
     }
 }
 
-// class IfAST extends AST {
-//     constructor(terminal, condition, body) {
-//         super(terminal);
-//         this.condition = condition;
-//         this.body = body;
-//     }
+class IfAST extends AST {
+    constructor(terminal, condition, body, else_body = null) {
+        super(terminal);
+        this.condition = condition;
+        this.body = body;
+        this.else_body = else_body;
+    }
 
-//     evaluate() {
-//         if (this.condition.evaluate()) {
-//             for (let node of this.body) {
-//                 node.evaluate();
-//             }
-//         }
-//         return;
-//     }
+    evaluate() {
+        if (this.condition.evaluate() == true) {
+            for (let node of this.body) {
+                node.evaluate();
+            }
+        }
+        else if (this.else_body != null) {
+            for (let node of this.else_body) {
+                node.evaluate();
+            }
+        }
+        return;
+    }
 
-//     dump(prefix) {
-//         this.terminal.writeln(prefix + 'IfAST');
-//         this.condition.dump(prefix + '  ');
-//         for (let node of this.body) {
-//             node.dump(prefix + '  ');
-//         }
-//         return;
-//     }
-// }
+    dump(prefix) {
+        this.terminal.writeln(prefix + 'IfAST');
+        this.condition.dump(prefix + '  ');
+        for (let node of this.body) {
+            node.dump(prefix + '  ');
+        }
+        if (this.else_body != null) {
+            this.terminal.writeln(prefix + 'Else');
+            for (let node of this.else_body) {
+                node.dump(prefix + '  ');
+            }
+        }
+        return;
+    }
+}
 
 class VarExprAST extends AST {
     constructor(terminal, ident) {
@@ -368,9 +382,7 @@ class Parser {
     constructor(tokens, terminal) {
         this.tokens = tokens;
         this.terminal = terminal;
-        this.current_line = 1;
 
-        // for a single line
         this.current = 0;
     }
 
@@ -379,9 +391,9 @@ class Parser {
     }
 
     expect_type(type) {
-        if (this.current < this.line.length) {
-            let current_type = this.line[this.current]['type'];
-            let current_value = this.line[this.current]['value'];
+        if (this.current < this.tokens.length) {
+            let current_type = this.tokens[this.current]['type'];
+            let current_value = this.tokens[this.current]['value'];
 
             if (current_type == type) {  
                 this.current++;
@@ -395,9 +407,9 @@ class Parser {
     }
 
     expect_value(value) {
-        if (this.current < this.line.length) {
-            let current_type = this.line[this.current]['type'];
-            let current_value = this.line[this.current]['value'];
+        if (this.current < this.tokens.length) {
+            let current_type = this.tokens[this.current]['type'];
+            let current_value = this.tokens[this.current]['value'];
 
             if (current_value == value) {
                 this.current++;
@@ -412,22 +424,19 @@ class Parser {
     
     parse() {
         let ast = new ProgramAST(this.terminal);
-        for (let line of this.tokens) {
-            this.line = line;
-            this.current = 0;
-            let node = this.parse_line();
+        while(this.current < this.tokens.length) {
+            let node = this.parse_stmt();
 
             if (node == null) {
                 return null;
             }
             ast.body.push(node);
-            this.current_line++;
         }
         return ast;
     }
 
-    parse_line() {
-        let current_type = this.line[this.current]['type'];
+    parse_stmt() {
+        let current_type = this.tokens[this.current]['type'];
     
         if (current_type == 'declare') {
             return this.var_decl();
@@ -446,9 +455,9 @@ class Parser {
     }
 
     check_type(type) {
-        if (this.current < this.line.length) {
-            let current_type = this.line[this.current]['type'];
-            let current_value = this.line[this.current]['value'];
+        if (this.current < this.tokens.length) {
+            let current_type = this.tokens[this.current]['type'];
+            let current_value = this.tokens[this.current]['value'];
 
             if (current_type == type) {
                 this.current++;
@@ -460,8 +469,8 @@ class Parser {
     }
 
     check_value(value) {
-        if (this.current < this.line.length) {
-            let current_value = this.line[this.current]['value'];
+        if (this.current < this.tokens.length) {
+            let current_value = this.tokens[this.current]['value'];
 
             if (current_value == value) {
                 this.current++;
@@ -489,7 +498,7 @@ class Parser {
         let expr = this.parse_compar();
         
         while (true) {
-            let ex_op = this.check_value('=') || this.check_value('<>');
+            let ex_op = this.check_value('=') || this.check_value('<>') || this.check_value('OR');
             if (ex_op) {
                 let rhs = this.parse_compar();
                 expr = new BinaryExprAST(this.terminal, ex_op, expr, rhs);
@@ -504,7 +513,7 @@ class Parser {
         let expr = this.parse_term();
 
         while (true) {
-            let ex_op = this.check_value('<') || this.check_value('>') || this.check_value('<=') || this.check_value('>=');
+            let ex_op = this.check_value('<') || this.check_value('>') || this.check_value('<=') || this.check_value('>=') || this.check_value('AND');
             if (ex_op) {
                 let rhs = this.parse_term();
                 expr = new BinaryExprAST(this.terminal, ex_op, expr, rhs);
@@ -515,7 +524,7 @@ class Parser {
         }
     }
 
-    parse_term() {
+    parse_term() {  
         let expr = this.parse_factor();
 
         while (true) {
@@ -546,7 +555,7 @@ class Parser {
     }
 
     parse_unary() {
-        let ex_op = this.check_value('not') || this.check_value('+') || this.check_value('-');
+        let ex_op = this.check_value('NOT') || this.check_value('+') || this.check_value('-');
         if (ex_op) {
             let rhs = this.parse_unary();
             return new UnaryExprAST(this.terminal, ex_op, rhs);
@@ -556,8 +565,8 @@ class Parser {
 
     parse_primary() {
         // preform this.current++ in the if statements for correct error msg
-        let current_type = this.line[this.current]['type'];
-        let current_value = this.line[this.current]['value'];
+        let current_type = this.tokens[this.current]['type'];
+        let current_value = this.tokens[this.current]['value'];
         if (current_type == 'boolean') {
             this.current++;
             return new BoolAST(this.terminal, current_value);
@@ -575,7 +584,6 @@ class Parser {
             return new VarExprAST(this.terminal, current_value);
         }
         else if (current_value == '(') {
-            console.log('here');
             this.current++;
             let expr = this.parse_expr();
             // use expect_value to give an error if not found
@@ -621,6 +629,22 @@ class Parser {
         let ex_expr = this.parse_expr();
         if (ex_ident != null && ex_op != null && ex_expr != null)
             return new VarAssignAST(this.terminal, ex_ident, ex_expr);
+        return null;
+    }
+
+    if_statement() {
+        /*
+        if_statement -> if expr then statement_list (else statement_list)? end
+        */
+        let ex_if = this.expect_type('if');
+        let ex_expr = this.parse_expr();
+        let ex_then = this.expect_type('then');
+        let ex_statement_list = this.parse_statement_list();
+        let ex_else = this.expect_type('else');
+        let ex_statement_list2 = this.parse_statement_list();
+        let ex_end = this.expect_type('end');
+        if (ex_if && ex_expr && ex_then && ex_statement_list && ex_else && ex_statement_list2 && ex_end)
+            return new IfAST(this.terminal, ex_expr, ex_statement_list, ex_statement_list2);
         return null;
     }
 
