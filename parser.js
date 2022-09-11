@@ -482,7 +482,6 @@ class Parser {
         unary -> ( not | '+' | '-' ) unary | primary
         primary -> number | string | identifier | '(' expr ')'
         */
-        console.log(this.current);
         return this.parse_equality();
     }
 
@@ -608,7 +607,7 @@ class Parser {
         let ex_ident = this.expect_type('identifier');
         let ex_op = this.expect_value(':');
         let ex_type = this.expect_type('type');
-        if (ex_declare && ex_ident && ex_op && ex_type)
+        if (ex_declare != null && ex_ident != null && ex_op != null && ex_type != null)
             return new VarDeclAST(this.terminal, ex_ident, ex_type);
         return null;
     }
@@ -620,7 +619,7 @@ class Parser {
         let ex_ident = this.expect_type('identifier');
         let ex_op = this.expect_value('<-');
         let ex_expr = this.parse_expr();
-        if (ex_ident && ex_op && ex_expr)
+        if (ex_ident != null && ex_op != null && ex_expr != null)
             return new VarAssignAST(this.terminal, ex_ident, ex_expr);
         return null;
     }

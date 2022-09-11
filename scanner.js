@@ -3,6 +3,7 @@ const NUMBERS = /[0-9]/;
 const SINGLEOPERATORS = /[+\-*/()\[\]=<>:]/;
 const DOUBLEOPERATORS = ['<-', '<=', '>=', '<>'];
 const LETTERS = /[a-z]/i;
+const BOOLEANS = ['TRUE', 'FALSE'];
 const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
                   'INTEGER', 'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
                   'OUTPUT'];
@@ -24,10 +25,10 @@ class Scanner {
         let lines = this.input.split('\n');
         for (let line of lines) {
             let tokens = this.tokenize_line(line);
-            if (tokens == null) {
+            if (tokens == null)
                 return null;
-            }
-            all_tokens.push(tokens);
+            if (tokens.length != 0) 
+                all_tokens.push(tokens);
             this.current_line++;
         }
         if (all_tokens.length != 0) {
@@ -70,6 +71,9 @@ class Scanner {
 
                 if (TYPES.includes(value)) {
                     tokens.push({type: 'type', value: value});
+                }
+                else if (BOOLEANS.includes(value)) {
+                    tokens.push({type: 'boolean', value: value});
                 }
                 else if (KEYWORDS.includes(value)) {
                     tokens.push({type: value.toLowerCase(), value: value});
@@ -136,6 +140,6 @@ class Scanner {
         }
         if (tokens.length != 0)
             return tokens;
-        return null;
+        return [];
     }
 }
