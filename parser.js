@@ -639,12 +639,35 @@ class Parser {
         let ex_if = this.expect_type('if');
         let ex_expr = this.parse_expr();
         let ex_then = this.expect_type('then');
-        let ex_statement_list = this.parse_statement_list();
-        let ex_else = this.expect_type('else');
-        let ex_statement_list2 = this.parse_statement_list();
-        let ex_end = this.expect_type('end');
-        if (ex_if && ex_expr && ex_then && ex_statement_list && ex_else && ex_statement_list2 && ex_end)
-            return new IfAST(this.terminal, ex_expr, ex_statement_list, ex_statement_list2);
+        let ex_body = [];
+        // use check
+        let ex_else = this.check_type('else');
+        let ex_endif = this.check_type('endif');
+        while(ex_else == null && ex_endif == null) {
+            let node = this.parse_stmt();
+
+            if (node == null) {
+                return null;
+            }
+            ex_body.push(node);
+            ex_else = this.check_type('else');
+            ex_endif = this.check_type('endif');
+        }
+        if (ex_if != null && ex_expr != null && ex_then && ex_endif != null) {
+            return new IfAST(this.terminal, ex_expr, ex_body);
+        }
+        let ex_else_body = [];
+        while(ex_endif == null) {
+            let node = this.parse_stmt();
+
+            if (node == null) {
+                return null;
+            }
+            ex_else_body.push(node);
+            ex_endif = this.check_type('endif');
+        }
+        if (ex_if != null && ex_expr != null && ex_then != null && ex_body != null && ex_else != null && ex_else_body && ex_endif != null)
+            return new IfAST(this.terminal, ex_expr, ex_body, ex_else_body);
         return null;
     }
 
