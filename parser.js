@@ -164,7 +164,7 @@ class WhileAST extends AST {
 
     evaluate() {
         let count = 0;
-        while (this.condition.evaluate() == true && count < 1010000) {
+        while (this.condition.evaluate() == true && count < 10100) {
             for (let node of this.body) {
                 node.evaluate();
             }
@@ -778,7 +778,8 @@ class Parser {
             ex_body.push(node);
             ex_next = this.check_type('next');
         }
-        if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to && ex_end != null && ex_body != null && ex_next != null)
+        let ex_ident2 = this.expect_type('identifier');
+        if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to && ex_end != null && ex_body != null && ex_next != null && ex_ident2 == ex_ident)
             return new ForAST(this.terminal, ex_ident, ex_start, ex_end, ex_body);
     }
 }
