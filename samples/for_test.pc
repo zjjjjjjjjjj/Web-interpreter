@@ -1,0 +1,8 @@
+DECLARE i:INTEGER
+DECLARE j:INTEGER
+
+FOR i <- 0 TO 9
+    FOR j <- 0 TO 9
+        OUTPUT i * j
+    NEXT j
+NEXT i

@@ -14,7 +14,7 @@
     <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/index.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/loader.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./style.css">
 
     <style>
         .el-textarea>textarea {
@@ -38,7 +38,8 @@
         <el-container>
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
-                <el-button @click="run">run</el-button>
+                <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
+                <el-button type="info" @click="run" style="margin:0px 10px" plain>run</el-button>
             </el-header>
             <el-main height="auto">
                 <div ref="editor" class="main"></div>
@@ -54,7 +55,7 @@
             el: '#app',
             data: {
                 activeNames: ['3'],
-                dwarf2: false,
+                dumpast: false,
                 curLevel: 1,
                 output: '',
                 editor: null,
@@ -85,7 +86,7 @@
                     rows: 10,
                     theme: {
                         foreground: "white",
-                        background: "#696969"
+                        background: "#919399"
                     }
                 });
                 this.terminal.open(this.$refs.terminal);
@@ -127,7 +128,7 @@
                         let ast = parser.parse();
                         if (ast != null) {
                             // this.terminal.writeln('Parsing completed');
-                            // ast.dump('');
+                            this.dumpast ? ast.dump('') : null;
                             ast.evaluate();
                         }
                         this.terminal.write(this.prefix);
