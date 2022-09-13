@@ -1,0 +1,3 @@
+IF 1 = 1 THEN
+    OUTPUT "00"
+ENDIF
