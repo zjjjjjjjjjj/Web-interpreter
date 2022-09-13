@@ -38,8 +38,8 @@
         <el-container>
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
-                <el-switch v-model="dumpast" active-text="DumpAST"></el-switch>
-                <el-button type="info" @click="run" plain>run</el-button>
+                <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
+                <el-button type="info" @click="run" style="margin:0px 10px" plain>run</el-button>
             </el-header>
             <el-main height="auto">
                 <div ref="editor" class="main"></div>
