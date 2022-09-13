@@ -14,7 +14,7 @@
     <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/index.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/loader.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/theme-chalk/index.min.css">
+    <link rel="stylesheet" href="./style.css">
 
     <style>
         .el-textarea>textarea {
@@ -39,7 +39,7 @@
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
                 <el-switch v-model="dumpast" active-text="DumpAST"></el-switch>
-                <el-button @click="run">run</el-button>
+                <el-button type="info" @click="run" plain>run</el-button>
             </el-header>
             <el-main height="auto">
                 <div ref="editor" class="main"></div>
@@ -86,7 +86,7 @@
                     rows: 10,
                     theme: {
                         foreground: "white",
-                        background: "#696969"
+                        background: "#919399"
                     }
                 });
                 this.terminal.open(this.$refs.terminal);
