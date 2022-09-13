@@ -155,6 +155,67 @@ class IfAST extends AST {
     }
 }
 
+class WhileAST extends AST {
+    constructor(terminal, condition, body) {
+        super(terminal);
+        this.condition = condition;
+        this.body = body;
+    }
+
+    evaluate() {
+        let count = 0;
+        while (this.condition.evaluate() == true && count < 1010000) {
+            for (let node of this.body) {
+                node.evaluate();
+            }
+            count++;
+        }
+        return;
+    }
+
+    dump(prefix) {
+        this.terminal.writeln(prefix + 'WhileAST');
+        this.condition.dump(prefix + '  ');
+        for (let node of this.body) {
+            node.dump(prefix + '  ');
+        }
+    }
+}
+
+class ForAST extends AST {
+    constructor(terminal, ident, start, end, body) {
+        super(terminal);
+        this.ident = ident;
+        this.start = start;
+        this.end = end;
+        this.body = body;
+    }
+
+    evaluate() {
+        let start = this.start.evaluate();
+        let end = this.end.evaluate();
+        if (start < end) {
+            for (let i = start; i <= end; i++) {
+                named_values[this.ident].value = i;
+                for (let node of this.body) {
+                    node.evaluate();
+                }
+            }
+        }
+        return;
+    }
+
+    dump(prefix) {
+        this.terminal.writeln(prefix + 'ForAST ' + this.ident);
+        this.start.dump(prefix + '  ');
+        this.end.dump(prefix + '  ');
+        for (let node of this.body) {
+            node.dump(prefix + '  ');
+        }
+        return;
+    }
+}
+
 class VarExprAST extends AST {
     constructor(terminal, ident) {
         super(terminal);
@@ -191,6 +252,8 @@ class UnaryExprAST extends AST {
 
     evaluate() {
         let value = this.expr.evaluate();
+        if (value == null)
+            return null
         if (this.op == '+' || this.op == '-') {
             if (typeof(value) == 'number') {
                 if (this.op == '+') {
@@ -234,6 +297,8 @@ class BinaryExprAST extends AST {
     evaluate() {
         let lhs = this.lhs.evaluate();
         let rhs = this.rhs.evaluate();
+        if (lhs == null && rhs == null)
+            return null
         if (this.op == '+' || this.op == '-' || this.op == '*' || this.op == '/') {
             if (typeof(lhs) == 'number' && typeof(rhs) == 'number') {
                 if (this.op == '+')
@@ -447,6 +512,12 @@ class Parser {
         else if (current_type == 'if') {
             return this.if_statement();
         }
+        else if (current_type == 'while') {
+            return this.while_statement();
+        }
+        else if (current_type == 'for') {
+            return this.for_statement();
+        }
         else if (current_type == 'output') {
             return this.output();
         }
@@ -637,7 +708,7 @@ class Parser {
         if_statement -> if expr then statement_list (else statement_list)? end
         */
         let ex_if = this.expect_type('if');
-        let ex_expr = this.parse_expr();
+        let ex_cond = this.parse_expr();
         let ex_then = this.expect_type('then');
         let ex_body = [];
         // use check
@@ -646,29 +717,68 @@ class Parser {
         while(ex_else == null && ex_endif == null) {
             let node = this.parse_stmt();
 
-            if (node == null) {
+            if (node == null)
                 return null;
-            }
+
             ex_body.push(node);
             ex_else = this.check_type('else');
             ex_endif = this.check_type('endif');
         }
-        if (ex_if != null && ex_expr != null && ex_then && ex_endif != null) {
+        if (ex_if != null && ex_cond != null && ex_then && ex_endif != null)
             return new IfAST(this.terminal, ex_expr, ex_body);
-        }
+
         let ex_else_body = [];
         while(ex_endif == null) {
             let node = this.parse_stmt();
 
-            if (node == null) {
+            if (node == null)
                 return null;
-            }
+
             ex_else_body.push(node);
             ex_endif = this.check_type('endif');
         }
-        if (ex_if != null && ex_expr != null && ex_then != null && ex_body != null && ex_else != null && ex_else_body && ex_endif != null)
-            return new IfAST(this.terminal, ex_expr, ex_body, ex_else_body);
+        if (ex_if != null && ex_cond != null && ex_then != null && ex_body != null && ex_else != null && ex_else_body && ex_endif != null)
+            return new IfAST(this.terminal, ex_cond, ex_body, ex_else_body);
         return null;
     }
 
+    while_statement() {
+        let ex_while = this.expect_type('while');
+        let ex_expr = this.parse_expr();
+        let ex_body = [];
+        let ex_endwhile = this.check_type('endwhile');
+        while(ex_endwhile == null) {
+            let node = this.parse_stmt();
+
+            if (node == null)
+                return null
+
+            ex_body.push(node);
+            ex_endwhile = this.check_type('endwhile');
+        }
+        if (ex_while != null && ex_expr != null && ex_body != null && ex_endwhile != null)
+            return new WhileAST(this.terminal, ex_expr, ex_body);
+    }
+
+    for_statement() {
+        let ex_for = this.expect_type('for');
+        let ex_ident = this.expect_type('identifier');
+        let ex_op = this.expect_value('<-');
+        let ex_start = this.parse_expr();
+        let ex_to = this.expect_type('to');
+        let ex_end = this.parse_expr();
+        let ex_body = [];
+        let ex_next = this.check_type('next');
+        while(ex_next == null) {
+            let node = this.parse_stmt();
+
+            if (node == null)
+                return null
+
+            ex_body.push(node);
+            ex_next = this.check_type('next');
+        }
+        if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to && ex_end != null && ex_body != null && ex_next != null)
+            return new ForAST(this.terminal, ex_ident, ex_start, ex_end, ex_body);
+    }
 }
