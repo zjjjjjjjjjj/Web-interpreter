@@ -1,458 +1,27 @@
 // TODO: make an 'error' global function and simplify the code
+import { 
+    ProgramAST,
+    VarDeclAST,
+    VarAssignAST,
+    IfAST,
+    WhileAST,
+    ForAST,
+    VarExprAST,
+    UnaryExprAST,
+    BinaryExprAST,
+    NumberAST,
+    StringAST,
+    BoolAST,
+    OutputAST
+} from "./ast.js";
 
-class Variable {
-    constructor(value, type) {
-        this.value = value;
-        this.type = type;
-    }
-}
-
-named_values = {};
-
-// *****AST*****
-class AST {
-    constructor(terminal) {
-        this.terminal = terminal;
-    }
-
-    error(err_msg) {
-        this.terminal.writeln(err_msg);
-    }
-
-    evaluate() {
-        return;
-    }
-
-    dump(prefix) {
-        return;
-    }
-}
-
-class ProgramAST extends AST {
-    constructor(terminal) {
-        super(terminal);
-        this.body = [];
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        let result = null;
-        for (let node of this.body) {
-            result = node.evaluate();
-        }
-        return result;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'ProgramAST');
-        for (let node of this.body) {
-            node.dump(prefix + '  ');
-        }
-        return;
-    }
-}
-
-class VarDeclAST extends AST {
-    constructor(terminal, ident, type) {
-        super(terminal);
-        this.ident = ident;
-        if (type == 'INTEGER' || type == 'REAL') {
-            this.type = 'number';
-        }
-        else if (type == 'STRING' || type == 'CHAR') {
-            this.type = 'string';
-        }
-        else if (type == 'BOOLEAN') {
-            this.type = 'boolean';
-        }
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        named_values[this.ident] = new Variable(null, this.type);
-        return;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'VarDeclAST ' + this.ident + ' ' + this.type);
-        return;
-    }
-}
-
-class VarAssignAST extends AST {
-    constructor(terminal, ident, expr) {
-        super(terminal);
-        this.ident = ident;
-        this.expr = expr;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        let value = this.expr.evaluate();
-        if (this.ident in named_values) {
-            if (typeof(value) == named_values[this.ident].type)
-                named_values[this.ident].value = value;
-            else
-                this.error('Type mismatch in assignment for Variable ' + this.ident);
-        }
-        else {
-            this.error("Variable '" + this.ident + "' is not declared");
-        }
-        return;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'VarAssignAST: ' + this.ident);
-        this.expr.dump(prefix + '  ');
-        return;
-    }
-}
-
-class IfAST extends AST {
-    constructor(terminal, condition, body, else_body = null) {
-        super(terminal);
-        this.condition = condition;
-        this.body = body;
-        this.else_body = else_body;
-    }
-
-    evaluate() {
-        if (this.condition.evaluate() == true) {
-            for (let node of this.body) {
-                node.evaluate();
-            }
-        }
-        else if (this.else_body != null) {
-            for (let node of this.else_body) {
-                node.evaluate();
-            }
-        }
-        return;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'IfAST');
-        this.condition.dump(prefix + '  ');
-        for (let node of this.body) {
-            node.dump(prefix + '  ');
-        }
-        if (this.else_body != null) {
-            this.terminal.writeln(prefix + 'Else');
-            for (let node of this.else_body) {
-                node.dump(prefix + '  ');
-            }
-        }
-        return;
-    }
-}
-
-class WhileAST extends AST {
-    constructor(terminal, condition, body) {
-        super(terminal);
-        this.condition = condition;
-        this.body = body;
-    }
-
-    evaluate() {
-        let count = 0;
-        while (this.condition.evaluate() == true && count < 10100) {
-            for (let node of this.body) {
-                node.evaluate();
-            }
-            count++;
-        }
-        return;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'WhileAST');
-        this.condition.dump(prefix + '  ');
-        for (let node of this.body) {
-            node.dump(prefix + '  ');
-        }
-    }
-}
-
-class ForAST extends AST {
-    constructor(terminal, ident, start, end, body) {
-        super(terminal);
-        this.ident = ident;
-        this.start = start;
-        this.end = end;
-        this.body = body;
-    }
-
-    evaluate() {
-        let start = this.start.evaluate();
-        let end = this.end.evaluate();
-        if (start < end) {
-            for (let i = start; i <= end; i++) {
-                named_values[this.ident].value = i;
-                for (let node of this.body) {
-                    node.evaluate();
-                }
-            }
-        }
-        return;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'ForAST ' + this.ident);
-        this.start.dump(prefix + '  ');
-        this.end.dump(prefix + '  ');
-        for (let node of this.body) {
-            node.dump(prefix + '  ');
-        }
-        return;
-    }
-}
-
-class VarExprAST extends AST {
-    constructor(terminal, ident) {
-        super(terminal);
-        this.ident = ident;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        if (this.ident in named_values && named_values[this.ident].value != null) 
-            return named_values[this.ident].value;
-        this.error("Variable '" + this.ident + "' is not defined");
-        return null;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'VarExprAST: ' + this.ident);
-        return;
-    }
-}
-
-class UnaryExprAST extends AST {
-    constructor(terminal, op, expr) {
-        super(terminal);
-        this.op = op;
-        this.expr = expr;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        let value = this.expr.evaluate();
-        if (value == null)
-            return null
-        if (this.op == '+' || this.op == '-') {
-            if (typeof(value) == 'number') {
-                if (this.op == '+') {
-                    return value;
-                }
-                else {
-                    return -value;
-                }
-            }
-            else
-                this.error('Type mismatch in unary expression');
-        }
-        else if (this.op == 'NOT') {
-            if (typeof(value) == 'boolean')
-                return !value;
-            else
-                this.error('Type mismatch in unary expression');
-        }
-        return null;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'UnaryExprAST: ' + this.op);
-        this.expr.dump(prefix + '  ');
-        return;
-    }
-}
-
-class BinaryExprAST extends AST {
-    constructor (terminal, op, lhs, rhs) {
-        super(terminal);
-        this.op = op;
-        this.lhs = lhs;
-        this.rhs = rhs;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        let lhs = this.lhs.evaluate();
-        let rhs = this.rhs.evaluate();
-        if (lhs == null && rhs == null)
-            return null
-        if (this.op == '+' || this.op == '-' || this.op == '*' || this.op == '/') {
-            if (typeof(lhs) == 'number' && typeof(rhs) == 'number') {
-                if (this.op == '+')
-                    return lhs + rhs;
-                else if (this.op == '-')
-                    return lhs - rhs;
-                else if (this.op == '*')
-                    return lhs * rhs;
-                else if (this.op == '/')
-                    return lhs / rhs;
-            }
-            else
-                this.error('Type mismatch in binary expression');
-        }
-        else if (this.op == 'AND' || this.op == 'OR') {
-            if (typeof(lhs) == 'boolean' && typeof(rhs) == 'boolean') {
-                if (this.op == 'AND')
-                    return lhs && rhs;
-                else if (this.op == 'OR')
-                    return lhs || rhs;
-            }
-            else
-                this.error('Type mismatch in binary expression');
-        }
-        else if (this.op == '=' || this.op == '<>' || this.op == '<' || this.op == '<=' || this.op == '>' || this.op == '>=') {
-            if (typeof(lhs) == typeof(rhs)) {
-                if (this.op == '=')
-                    return lhs == rhs;
-                else if (this.op == '<>')
-                    return lhs != rhs;
-                else if (this.op == '<')
-                    return lhs < rhs;
-                else if (this.op == '<=')
-                    return lhs <= rhs;
-                else if (this.op == '>')
-                    return lhs > rhs;
-                else if (this.op == '>=')
-                    return lhs >= rhs;
-            }
-            else
-                this.error('Type mismatch in binary expression');
-        }
-        return null;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'BinaryExprAST: ' + this.op);
-        this.lhs.dump(prefix + '  ');
-        this.rhs.dump(prefix + '  ');
-        return;
-    }
-}
-
-class NumberAST extends AST {
-    constructor(terminal, value) {
-        super(terminal);
-        this.value = Number(value);
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        return this.value;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'NumberAST: ' + this.value.toString());
-        return;
-    }
-}
-
-class StringAST extends AST {
-    constructor(terminal, value) {
-        super(terminal);
-        this.value = value;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        return this.value;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'StringAST: ' + this.value);
-        return;
-    }
-}
-
-class BoolAST extends AST {
-    constructor(terminal, value) {
-        super(terminal);
-        if (value == 'TRUE')
-            this.value = true;
-        else
-            this.value = false;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        return this.value;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'BoolAST: ' + this.value);
-        return;
-    }
-}
-
-class OutputAST extends AST {
-    constructor(terminal, expr) {
-        super(terminal);
-        this.expr = expr;
-    }
-
-    error(err_msg) {
-        super.error(err_msg);
-    }
-
-    evaluate() {
-        let value = this.expr.evaluate();
-        if (value != null)
-            this.terminal.writeln(value.toString());
-        return;
-    }
-
-    dump(prefix) {
-        this.terminal.writeln(prefix + 'OutputAST');
-        this.expr.dump(prefix + '  ');
-        return;
-    }
-}
-
-// *****AST*****
-
-var current_line = 1;
+import { Error } from "./error.js";
 
 class Parser {
-    constructor(tokens, terminal) {
+    constructor(tokens) {
         this.tokens = tokens;
-        this.terminal = terminal;
 
         this.current = 0;
-    }
-
-    error(err_msg, current_char) {
-        this.terminal.writeln(err_msg + ' at line ' + this.current_line + ':' + (current_char + 1));
     }
 
     expect_type(type) {
@@ -464,11 +33,9 @@ class Parser {
                 this.current++;
                 return current_value;
             }
-            this.error("Expected token with type '" + type + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
-            return null;
+            throw new Error("Expected token with type '" + type + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
         }
-        this.error("Expected token with type '" + type + "', Got end of line", this.current);
-        return null;
+        throw new Error("Expected token with type '" + type + "', Got end of line", this.current);
     }
 
     expect_value(value) {
@@ -480,11 +47,9 @@ class Parser {
                 this.current++;
                 return current_value;
             }
-            this.error("Expected token with value: '" + value + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
-            return null;
+            throw new Error("Expected token with value: '" + value + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
         }
-        this.error("Expected token with value: '" + value + "', Got end of line", this.current);
-        return null;
+        throw new Error("Expected token with value: '" + value + "', Got end of line", this.current);
     }
     
     parse() {
@@ -521,8 +86,7 @@ class Parser {
         else if (current_type == 'output') {
             return this.output();
         }
-        this.error('Unexpected token', this.current);
-        return null;
+        throw new Error('Unexpected token', this.current);
     }
 
     check_type(type) {
@@ -572,7 +136,7 @@ class Parser {
             let ex_op = this.check_value('=') || this.check_value('<>') || this.check_value('OR');
             if (ex_op) {
                 let rhs = this.parse_compar();
-                expr = new BinaryExprAST(this.terminal, ex_op, expr, rhs);
+                expr = new BinaryExprAST(ex_op, expr, rhs);
             }
             else {
                 return expr;
@@ -587,7 +151,7 @@ class Parser {
             let ex_op = this.check_value('<') || this.check_value('>') || this.check_value('<=') || this.check_value('>=') || this.check_value('AND');
             if (ex_op) {
                 let rhs = this.parse_term();
-                expr = new BinaryExprAST(this.terminal, ex_op, expr, rhs);
+                expr = new BinaryExprAST(ex_op, expr, rhs);
             }
             else {
                 return expr;
@@ -602,7 +166,7 @@ class Parser {
             let ex_op = this.check_value('+') || this.check_value('-');
             if (ex_op) {
                 let rhs = this.parse_factor();
-                expr = new BinaryExprAST(this.terminal, ex_op, expr, rhs);
+                expr = new BinaryExprAST(ex_op, expr, rhs);
             }
             else {
                 return expr;
@@ -617,7 +181,7 @@ class Parser {
             let ex_op = this.check_value('*') || this.check_value('/');
             if (ex_op) {
                 let rhs = this.parse_unary();
-                expr = new BinaryExprAST(this.terminal, ex_op, expr, rhs);
+                expr = new BinaryExprAST(ex_op, expr, rhs);
             }
             else {
                 return expr;
@@ -629,7 +193,7 @@ class Parser {
         let ex_op = this.check_value('NOT') || this.check_value('+') || this.check_value('-');
         if (ex_op) {
             let rhs = this.parse_unary();
-            return new UnaryExprAST(this.terminal, ex_op, rhs);
+            return new UnaryExprAST(ex_op, rhs);
         }
         return this.parse_primary();
     }
@@ -640,19 +204,19 @@ class Parser {
         let current_value = this.tokens[this.current]['value'];
         if (current_type == 'boolean') {
             this.current++;
-            return new BoolAST(this.terminal, current_value);
+            return new BoolAST(current_value);
         }
         else if (current_type == 'number') {
             this.current++;
-            return new NumberAST(this.terminal, current_value);
+            return new NumberAST(current_value);
         }
         else if (current_type == 'string') {
             this.current++;
-            return new StringAST(this.terminal, current_value);
+            return new StringAST(current_value);
         }
         else if (current_type == 'identifier') {
             this.current++;
-            return new VarExprAST(this.terminal, current_value);
+            return new VarExprAST(current_value);
         }
         else if (current_value == '(') {
             this.current++;
@@ -663,8 +227,7 @@ class Parser {
                 return expr;
             return null;
         }
-        this.error('Unexpected token' + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
-        return null;
+        throw new Error('Unexpected token' + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
     }
         
 
@@ -673,7 +236,7 @@ class Parser {
         let ex_output = this.expect_type('output');
         let ex_expr = this.parse_expr();
         if (ex_output && ex_expr)
-            return new OutputAST(this.terminal, ex_expr);
+            return new OutputAST(ex_expr);
         return null;
     }
     // *****built in functions*****
@@ -687,7 +250,7 @@ class Parser {
         let ex_op = this.expect_value(':');
         let ex_type = this.expect_type('type');
         if (ex_declare != null && ex_ident != null && ex_op != null && ex_type != null)
-            return new VarDeclAST(this.terminal, ex_ident, ex_type);
+            return new VarDeclAST(ex_ident, ex_type);
         return null;
     }
 
@@ -699,7 +262,7 @@ class Parser {
         let ex_op = this.expect_value('<-');
         let ex_expr = this.parse_expr();
         if (ex_ident != null && ex_op != null && ex_expr != null)
-            return new VarAssignAST(this.terminal, ex_ident, ex_expr);
+            return new VarAssignAST(ex_ident, ex_expr);
         return null;
     }
 
@@ -725,7 +288,7 @@ class Parser {
             ex_endif = this.check_type('endif');
         }
         if (ex_if != null && ex_cond != null && ex_then && ex_endif != null)
-            return new IfAST(this.terminal, ex_expr, ex_body);
+            return new IfAST(ex_expr, ex_body);
 
         let ex_else_body = [];
         while(ex_endif == null) {
@@ -738,7 +301,7 @@ class Parser {
             ex_endif = this.check_type('endif');
         }
         if (ex_if != null && ex_cond != null && ex_then != null && ex_body != null && ex_else != null && ex_else_body && ex_endif != null)
-            return new IfAST(this.terminal, ex_cond, ex_body, ex_else_body);
+            return new IfAST(ex_cond, ex_body, ex_else_body);
         return null;
     }
 
@@ -757,7 +320,7 @@ class Parser {
             ex_endwhile = this.check_type('endwhile');
         }
         if (ex_while != null && ex_expr != null && ex_body != null && ex_endwhile != null)
-            return new WhileAST(this.terminal, ex_expr, ex_body);
+            return new WhileAST(ex_expr, ex_body);
     }
 
     for_statement() {
@@ -767,6 +330,10 @@ class Parser {
         let ex_start = this.parse_expr();
         let ex_to = this.expect_type('to');
         let ex_end = this.parse_expr();
+        let ex_step = this.check_type('step');
+        let ex_step_val = null;
+        if (ex_step != null)
+            ex_step_val = this.parse_expr();
         let ex_body = [];
         let ex_next = this.check_type('next');
         while(ex_next == null) {
@@ -779,7 +346,13 @@ class Parser {
             ex_next = this.check_type('next');
         }
         let ex_ident2 = this.expect_type('identifier');
-        if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to && ex_end != null && ex_body != null && ex_next != null && ex_ident2 == ex_ident)
-            return new ForAST(this.terminal, ex_ident, ex_start, ex_end, ex_body);
+        if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to != null && ex_end != null && ex_step_val != null && ex_body != null && ex_next != null && ex_ident2 == ex_ident)
+            return new ForAST(ex_ident, ex_start, ex_end, ex_body, ex_step_val);
+        if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to != null && ex_end != null && ex_body != null && ex_next != null && ex_ident2 == ex_ident)
+            return new ForAST(ex_ident, ex_start, ex_end, ex_body);
     }
+}
+
+export {
+    Parser
 }
