@@ -142,7 +142,7 @@ class WhileAST {
 }
 
 class ForAST {
-    constructor(ident, start, end, body, step = new NumberAST(terminal, 1)) {
+    constructor(ident, start, end, body, step = new NumberAST(1)) {
         this.ident = ident;
         this.start = start;
         this.end = end;

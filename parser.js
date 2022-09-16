@@ -1,4 +1,3 @@
-// TODO: make an 'error' global function and simplify the code
 import { 
     ProgramAST,
     VarDeclAST,
@@ -24,7 +23,9 @@ class Parser {
         this.current = 0;
     }
 
-    expect_type(type) {
+    // expect: throw an error if unexpected
+    // chaeck: do nothing if unexpected
+    expect_type(type, throw_error = true) {
         if (this.current < this.tokens.length) {
             let current_type = this.tokens[this.current]['type'];
             let current_value = this.tokens[this.current]['value'];
@@ -33,12 +34,16 @@ class Parser {
                 this.current++;
                 return current_value;
             }
-            throw new Error("Expected token with type '" + type + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
+            if (throw_error)
+                throw new Error("Expected token with type '" + type + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
+            return null;
         }
-        throw new Error("Expected token with type '" + type + "', Got end of line", this.current);
+        if (throw_error)
+            throw new Error("Expected token with type '" + type + "', Got end of line", this.current);
+        return null;
     }
 
-    expect_value(value) {
+    expect_value(value, throw_error = true) {
         if (this.current < this.tokens.length) {
             let current_type = this.tokens[this.current]['type'];
             let current_value = this.tokens[this.current]['value'];
@@ -47,13 +52,17 @@ class Parser {
                 this.current++;
                 return current_value;
             }
-            throw new Error("Expected token with value: '" + value + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
+            if (throw_error)
+                throw new Error("Expected token with value: '" + value + "', Got token" + '(type: ' + current_type + ', value:' + current_value + ')', this.current);
+            return null;
         }
-        throw new Error("Expected token with value: '" + value + "', Got end of line", this.current);
+        if (throw_error)
+            throw new Error("Expected token with value: '" + value + "', Got end of line", this.current);
+        return null;
     }
     
     parse() {
-        let ast = new ProgramAST(this.terminal);
+        let ast = new ProgramAST();
         while(this.current < this.tokens.length) {
             let node = this.parse_stmt();
 
@@ -89,33 +98,6 @@ class Parser {
         throw new Error('Unexpected token', this.current);
     }
 
-    check_type(type) {
-        if (this.current < this.tokens.length) {
-            let current_type = this.tokens[this.current]['type'];
-            let current_value = this.tokens[this.current]['value'];
-
-            if (current_type == type) {
-                this.current++;
-                return current_value;
-            }
-            return null;
-        }
-        return null;
-    }
-
-    check_value(value) {
-        if (this.current < this.tokens.length) {
-            let current_value = this.tokens[this.current]['value'];
-
-            if (current_value == value) {
-                this.current++;
-                return current_value;
-            }
-            return null;
-        }
-        return null;
-    }
-
     parse_expr() {
         /*
         expr -> equality
@@ -133,7 +115,7 @@ class Parser {
         let expr = this.parse_compar();
         
         while (true) {
-            let ex_op = this.check_value('=') || this.check_value('<>') || this.check_value('OR');
+            let ex_op = this.expect_value('=', false) || this.expect_value('<>', false) || this.expect_value('OR', false);
             if (ex_op) {
                 let rhs = this.parse_compar();
                 expr = new BinaryExprAST(ex_op, expr, rhs);
@@ -148,7 +130,7 @@ class Parser {
         let expr = this.parse_term();
 
         while (true) {
-            let ex_op = this.check_value('<') || this.check_value('>') || this.check_value('<=') || this.check_value('>=') || this.check_value('AND');
+            let ex_op = this.expect_value('<', false) || this.expect_value('>', false) || this.expect_value('<=', false) || this.expect_value('>=', false) || this.expect_value('AND', false);
             if (ex_op) {
                 let rhs = this.parse_term();
                 expr = new BinaryExprAST(ex_op, expr, rhs);
@@ -163,7 +145,7 @@ class Parser {
         let expr = this.parse_factor();
 
         while (true) {
-            let ex_op = this.check_value('+') || this.check_value('-');
+            let ex_op = this.expect_value('+', false) || this.expect_value('-', false);
             if (ex_op) {
                 let rhs = this.parse_factor();
                 expr = new BinaryExprAST(ex_op, expr, rhs);
@@ -178,7 +160,7 @@ class Parser {
         let expr = this.parse_unary();
 
         while (true) {
-            let ex_op = this.check_value('*') || this.check_value('/');
+            let ex_op = this.expect_value('*', false) || this.expect_value('/', false);
             if (ex_op) {
                 let rhs = this.parse_unary();
                 expr = new BinaryExprAST(ex_op, expr, rhs);
@@ -190,7 +172,7 @@ class Parser {
     }
 
     parse_unary() {
-        let ex_op = this.check_value('NOT') || this.check_value('+') || this.check_value('-');
+        let ex_op = this.expect_value('NOT', false) || this.expect_value('+', false) || this.expect_value('-', false);
         if (ex_op) {
             let rhs = this.parse_unary();
             return new UnaryExprAST(ex_op, rhs);
@@ -274,9 +256,8 @@ class Parser {
         let ex_cond = this.parse_expr();
         let ex_then = this.expect_type('then');
         let ex_body = [];
-        // use check
-        let ex_else = this.check_type('else');
-        let ex_endif = this.check_type('endif');
+        let ex_else = this.expect_type('else', false);
+        let ex_endif = this.expect_type('endif', false);
         while(ex_else == null && ex_endif == null) {
             let node = this.parse_stmt();
 
@@ -284,8 +265,8 @@ class Parser {
                 return null;
 
             ex_body.push(node);
-            ex_else = this.check_type('else');
-            ex_endif = this.check_type('endif');
+            ex_else = this.expect_type('else', false);
+            ex_endif = this.expect_type('endif', false);
         }
         if (ex_if != null && ex_cond != null && ex_then && ex_endif != null)
             return new IfAST(ex_expr, ex_body);
@@ -298,7 +279,7 @@ class Parser {
                 return null;
 
             ex_else_body.push(node);
-            ex_endif = this.check_type('endif');
+            ex_endif = this.expect_type('endif', false);
         }
         if (ex_if != null && ex_cond != null && ex_then != null && ex_body != null && ex_else != null && ex_else_body && ex_endif != null)
             return new IfAST(ex_cond, ex_body, ex_else_body);
@@ -306,10 +287,10 @@ class Parser {
     }
 
     while_statement() {
-        let ex_while = this.expect_type('while');
+        let ex_while = this.expect_type('while', false);
         let ex_expr = this.parse_expr();
         let ex_body = [];
-        let ex_endwhile = this.check_type('endwhile');
+        let ex_endwhile = this.expect_type('endwhile', false);
         while(ex_endwhile == null) {
             let node = this.parse_stmt();
 
@@ -317,7 +298,7 @@ class Parser {
                 return null
 
             ex_body.push(node);
-            ex_endwhile = this.check_type('endwhile');
+            ex_endwhile = this.expect_type('endwhile', false);
         }
         if (ex_while != null && ex_expr != null && ex_body != null && ex_endwhile != null)
             return new WhileAST(ex_expr, ex_body);
@@ -330,12 +311,12 @@ class Parser {
         let ex_start = this.parse_expr();
         let ex_to = this.expect_type('to');
         let ex_end = this.parse_expr();
-        let ex_step = this.check_type('step');
+        let ex_step = this.expect_type('step', false);
         let ex_step_val = null;
         if (ex_step != null)
             ex_step_val = this.parse_expr();
         let ex_body = [];
-        let ex_next = this.check_type('next');
+        let ex_next = this.expect_type('next', false);
         while(ex_next == null) {
             let node = this.parse_stmt();
 
@@ -343,7 +324,7 @@ class Parser {
                 return null
 
             ex_body.push(node);
-            ex_next = this.check_type('next');
+            ex_next = this.expect_type('next', false);
         }
         let ex_ident2 = this.expect_type('identifier');
         if (ex_for != null && ex_ident != null && ex_op != null && ex_start != null && ex_to != null && ex_end != null && ex_step_val != null && ex_body != null && ex_next != null && ex_ident2 == ex_ident)
