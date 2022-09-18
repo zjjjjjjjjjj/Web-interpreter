@@ -2,8 +2,8 @@ import { Scanner } from './scanner.js';
 import { Parser } from './parser.js';
 
 const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
-                  'INTEGER', 'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
-                  'OUTPUT'];
+                  'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
+                  'OUTPUT', 'INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN'];
 
 Vue.use(ELEMENT);
 var app = new Vue({
@@ -43,10 +43,10 @@ var app = new Vue({
                                 '@default': 'variable',
                             }
                         }],
+                        [/\/\/.*$/, 'comment'],
                         [/".*?"/, 'string'],
                         [/\d+/, 'number'],
                         [/[+\-*/()\[\]=<>:]/, 'operators'],
-                        [/\/\/.*$/, 'comment'],
                     ]
                 }
             });
@@ -54,11 +54,11 @@ var app = new Vue({
                 base: 'vs',
                 rules: [
                     { token: 'keyword', foreground: '#8e2aa0' },
+                    { token: 'comment', foreground: '#a1a1a1', fontStyle: 'italic' },
                     { token: 'variable', foreground: '#393a42' },
                     { token: 'string', foreground: '#71a056' },
                     { token: 'number', foreground: '#8b690d' },
                     { token: 'operators', foreground: '#5a76ef' },
-                    { token: 'comment', foreground: '#9cfd0d', fontStyle: 'italic' },
                 ]
             });
             monaco.languages.registerCompletionItemProvider('pseudocode', {
