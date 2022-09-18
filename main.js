@@ -1,6 +1,9 @@
 import { Scanner } from './scanner.js';
 import { Parser } from './parser.js';
-import { Error } from './error.js';
+
+const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
+                  'INTEGER', 'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
+                  'OUTPUT'];
 
 Vue.use(ELEMENT);
 var app = new Vue({
@@ -13,6 +16,7 @@ var app = new Vue({
         editor: null,
         prefix: '$ ',
         terminal: null,
+        fit_addon: null,
         cmd: ''
     },
     mounted() {
@@ -28,15 +32,60 @@ var app = new Vue({
             }
         };
         require(['vs/editor/editor.main'], () => {
+            monaco.languages.register({id: 'pseudocode'});
+            monaco.languages.setMonarchTokensProvider('pseudocode', {
+                KEYWORDS,
+                tokenizer: {
+                    root: [
+                        [/[a-zA-Z_]\w*/, {
+                            cases: {
+                                '@KEYWORDS': 'keyword',
+                                '@default': 'variable',
+                            }
+                        }],
+                        [/".*?"/, 'string'],
+                        [/\d+/, 'number'],
+                        [/[+\-*/()\[\]=<>:]/, 'operators'],
+                        [/\/\/.*$/, 'comment'],
+                    ]
+                }
+            });
+            monaco.editor.defineTheme('pseudocode-theme', {
+                base: 'vs',
+                rules: [
+                    { token: 'keyword', foreground: '#8e2aa0' },
+                    { token: 'variable', foreground: '#393a42' },
+                    { token: 'string', foreground: '#71a056' },
+                    { token: 'number', foreground: '#8b690d' },
+                    { token: 'operators', foreground: '#5a76ef' },
+                    { token: 'comment', foreground: '#9cfd0d', fontStyle: 'italic' },
+                ]
+            });
+            monaco.languages.registerCompletionItemProvider('pseudocode', {
+                provideCompletionItems: (model, position) => {
+                    const suggestions = [
+                        ...KEYWORDS.map(keyword => {
+                            return {
+                                label: keyword,
+                                kind: monaco.languages.CompletionItemKind.Keyword,
+                                insertText: keyword,
+                            };
+                        }),
+                    ];
+                    return { suggestions: suggestions };
+                }
+            });
             this.editor = monaco.editor.create(this.$refs.editor, {
-                language: "c",
+                language: 'pseudocode',
+                fontSize: '20px',
+                theme: 'pseudocode-theme',
                 automaticLayout: true
             });
         });
 
         this.terminal = new Terminal({
             rendererType: "dom",
-            rows: 20,
+            rows: 15,
             theme: {
                 foreground: "white",
                 background: "#919399"
@@ -95,6 +144,7 @@ var app = new Vue({
                     this.dumpast ? ast.dump('') : null;
                     ast.evaluate();
                 }
+                // cannot write in execute_cmd() for unknown reason
                 this.terminal.write(this.prefix);
             }
         },
@@ -118,7 +168,7 @@ var app = new Vue({
             }
         },
         report(err_msg) {
-            this.terminal.writeln(err_msg);
+            this.terminal.write(err_msg);
             this.terminal.write(this.prefix);
         }
     }

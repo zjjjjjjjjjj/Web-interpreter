@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.5.0/css/xterm.css" />
 	<script src="https://cdn.jsdelivr.net/npm/xterm@4.5.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.6.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/index.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/loader.min.js"></script>
@@ -21,13 +22,13 @@
         <el-container>
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
-                <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
-                <el-button type="info" @click="run" style="margin:0px 10px" plain>run</el-button>
-            </el-header>
+                <el-switch v-model="dumpast" active-text="DumpAST"></el-switch>
+                <el-button type="info" @click="run" plain>run</el-button>
+            </el-header>                
             <el-main height="auto">
                 <div ref="editor" class="main"></div>
             </el-main>
-            <el-footer height="400px">
+            <el-footer height="300px">
                 <div ref="terminal"></div>
             </el-footer>
         </el-container>
