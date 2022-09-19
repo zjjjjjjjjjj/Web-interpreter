@@ -6,28 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pseudocode interpreter</title>
 
-    <script type="module" src="./scanner.js"></script>
-    <script type="module" src="./parser.js"></script>
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.5.0/css/xterm.css" />
+    <link rel="stylesheet" href="/theme/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.5.0/css/xterm.css">
 	<script src="https://cdn.jsdelivr.net/npm/xterm@4.5.0/lib/xterm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.6.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/index.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.10/index.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/loader.min.js"></script>
-    <link rel="stylesheet" href="./style.css">
+
+    <style>
+        .el-textarea>textarea {
+            font-family: consolas;
+            height: 100% !important;
+        }
+
+        html,
+        body,
+        #app,
+        .el-container,
+        .el-main>div {
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
         <el-container>
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
-                <el-switch v-model="dumpast" active-text="DumpAST"></el-switch>
-                <el-button type="info" @click="run" plain>run</el-button>
-            </el-header>                
-            <el-main height="auto">
-                <div ref="editor" class="main"></div>
-            </el-main>
+            </el-header>
+            <el-container>
+                <el-aside width="auto">
+                    <el-menu>
+                        <el-menu-item index="1">
+                            <i class="el-icon-caret-right"></i>
+                            <span slot="title">run</span>
+                        </el-menu-item>
+                        <el-menu-item index="2">
+                            <span slot="title">stop</span>
+                        </el-menu-item>
+                    </el-menu>
+                    <!-- <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
+                    <el-button type="info" @click="run" plain style="margin:0px 10px">run</el-button> -->
+                </el-aside>
+                <el-main height="auto">
+                    <div ref="editor" class="main"></div>
+                </el-main>
+            </el-container>
             <el-footer height="300px">
                 <div ref="terminal"></div>
             </el-footer>

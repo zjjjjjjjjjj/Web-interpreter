@@ -1,9 +1,10 @@
 import { Scanner } from './scanner.js';
 import { Parser } from './parser.js';
 
-const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
+const KEYWORDS = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN',
+                  'FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
                   'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
-                  'OUTPUT', 'INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN'];
+                  'OUTPUT'];
 
 Vue.use(ELEMENT);
 var app = new Vue({
@@ -45,6 +46,7 @@ var app = new Vue({
                         }],
                         [/\/\/.*$/, 'comment'],
                         [/".*?"/, 'string'],
+                        [/'.?'/, 'char'],
                         [/\d+/, 'number'],
                         [/[+\-*/()\[\]=<>:]/, 'operators'],
                     ]
@@ -57,9 +59,12 @@ var app = new Vue({
                     { token: 'comment', foreground: '#a1a1a1', fontStyle: 'italic' },
                     { token: 'variable', foreground: '#393a42' },
                     { token: 'string', foreground: '#71a056' },
+                    { token: 'char', foreground: '#71a056' },
                     { token: 'number', foreground: '#8b690d' },
                     { token: 'operators', foreground: '#5a76ef' },
-                ]
+                ],
+                colors: {
+                }
             });
             monaco.languages.registerCompletionItemProvider('pseudocode', {
                 provideCompletionItems: (model, position) => {
@@ -77,7 +82,7 @@ var app = new Vue({
             });
             this.editor = monaco.editor.create(this.$refs.editor, {
                 language: 'pseudocode',
-                fontSize: '20px',
+                fontSize: '18px',
                 theme: 'pseudocode-theme',
                 automaticLayout: true
             });

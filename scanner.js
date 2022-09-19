@@ -8,7 +8,7 @@ const DOUBLEOPERATORS = ['<-', '<=', '>=', '<>'];
 const LETTERS = /[a-z]/i;
 const BOOLEANS = ['TRUE', 'FALSE'];
 const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
-                  'INTEGER', 'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
+                  'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
                   'OUTPUT'];
 const TYPES = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN'];
 
