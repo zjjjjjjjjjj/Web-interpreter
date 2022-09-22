@@ -1,11 +1,14 @@
 import { 
     ProgramAST,
     VarDeclAST,
+    ArrDeclAST,
     VarAssignAST,
+    ArrAssignAST,
     IfAST,
     WhileAST,
     ForAST,
     VarExprAST,
+    ArrExprAST,
     UnaryExprAST,
     BinaryExprAST,
     NumberAST,
@@ -23,8 +26,6 @@ class Parser {
         this.current = 0;
     }
 
-    // expect: throw an error if unexpected
-    // chaeck: do nothing if unexpected
     expect_type(type, throw_error = true) {
         if (this.current < this.tokens.length) {
             let current_type = this.tokens[this.current]['type'];
@@ -78,10 +79,10 @@ class Parser {
         let current_type = this.tokens[this.current]['type'];
     
         if (current_type == 'declare') {
-            return this.var_decl();
+            return this.decl();
         }
         else if (current_type == 'identifier') {
-            return this.variable_assignment();
+            return this.assign();
         }        
         else if (current_type == 'if') {
             return this.if_statement();
@@ -198,6 +199,12 @@ class Parser {
         }
         else if (current_type == 'identifier') {
             this.current++;
+            let ex_lpar = this.expect_value('[', false);
+            if (ex_lpar) {
+                let index = this.parse_expr();
+                this.expect_value(']');
+                return new ArrExprAST(current_value, index);
+            }
             return new VarExprAST(current_value);
         }
         else if (current_value == '(') {
@@ -205,7 +212,7 @@ class Parser {
             let expr = this.parse_expr();
             // use expect_value to give an error if not found
             let ex_lpar = this.expect_value(')');
-            if (expr && ex_lpar)
+            if (expr != null && ex_lpar != null)
                 return expr;
             return null;
         }
@@ -221,31 +228,59 @@ class Parser {
             return new OutputAST(ex_expr);
         return null;
     }
-    // *****built in functions*****
+
+    decl() {
+        /*
+        decl -> declare identifier ':' type | decl -> declare identifier ':' array '[' ']' OF type
+        */
+        let ex_declare = this.expect_type('declare');
+        let ex_ident = this.expect_type('identifier');
+        let ex_op = this.expect_value(':');
+        let ex_type = this.expect_type('type', false);
+        if (ex_declare != null && ex_ident != null && ex_op != null && ex_type != null)
+            return new VarDeclAST(ex_ident, ex_type);
+        let ex_arr = this.expect_type('array');
+        let ex_lpar = this.expect_value('[');
+        let ex_lower = this.expect_type('number');
+        let ex_op2 = this.expect_value(':');
+        let ex_upper = this.expect_type('number');
+        let ex_rpar = this.expect_value(']');
+        let ex_of = this.expect_type('of');
+        ex_type = this.expect_type('type');
+        if (ex_declare != null && ex_ident != null && ex_op != null && ex_arr != null && ex_lpar != null && ex_lower != null && ex_op2 != null && ex_upper != null && ex_rpar != null && ex_of && ex_type != null)
+            return new ArrDeclAST(ex_ident, ex_type, ex_lower, ex_upper);
+    }
 
     var_decl() {
         /*
         var_decl -> declare identifier ':' type
         */
-        let ex_declare = this.expect_type('declare');
-        let ex_ident = this.expect_type('identifier');
-        let ex_op = this.expect_value(':');
-        let ex_type = this.expect_type('type');
-        if (ex_declare != null && ex_ident != null && ex_op != null && ex_type != null)
-            return new VarDeclAST(ex_ident, ex_type);
-        return null;
     }
 
-    variable_assignment() {
+    assign() {
         /*
-        var_decl -> identifier '<-' expr
+        assign -> identifier '<-' expr | identifier '[' expr ']' '<-' expr
         */
         let ex_ident = this.expect_type('identifier');
+        let ex_lpar = this.expect_value('[', false);
+        if (ex_lpar != null) {
+            let ex_index = this.parse_expr();
+            let ex_rpar = this.expect_value(']');
+            let ex_op = this.expect_value('<-');
+            let ex_expr = this.parse_expr();
+            if (ex_ident != null && ex_lpar != null && ex_index != null && ex_rpar != null && ex_op != null && ex_expr != null)
+                return new ArrAssignAST(ex_ident, ex_index, ex_expr);
+        }
         let ex_op = this.expect_value('<-');
         let ex_expr = this.parse_expr();
         if (ex_ident != null && ex_op != null && ex_expr != null)
             return new VarAssignAST(ex_ident, ex_expr);
-        return null;
+    }
+
+    variable_assignment() {
+        /*
+        var_assign -> identifier '<-' expr
+        */
     }
 
     if_statement() {
@@ -283,7 +318,6 @@ class Parser {
         }
         if (ex_if != null && ex_cond != null && ex_then != null && ex_body != null && ex_else != null && ex_else_body && ex_endif != null)
             return new IfAST(ex_cond, ex_body, ex_else_body);
-        return null;
     }
 
     while_statement() {

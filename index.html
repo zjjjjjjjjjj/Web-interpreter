@@ -29,6 +29,11 @@
             max-height: 100%;
             overflow: hidden;
         }
+
+        .options {
+            margin-bottom: 10px;
+        }
+        
     </style>
 </head>
 <body>
@@ -40,12 +45,18 @@
             <el-container>
                 <el-aside width="auto">
                     <el-menu>
-                        <el-menu-item index="1">
+                        <el-menu-item index="1" @click="run">
                             <i class="el-icon-caret-right"></i>
-                            <span slot="title">run</span>
+                            <span>Run</span>
                         </el-menu-item>
-                        <el-menu-item index="2">
-                            <span slot="title">stop</span>
+                        <el-menu-item index="2" @click="stop" disabled>
+                            <i class="el-icon-circle-close"></i>
+                            <span>Stop</span>
+                        </el-menu-item>
+                        <el-menu-item index="3">
+                            <!-- <i v-bind:class="switch_type" :style="{color:switch_color}"></i>
+                            <span>DumpAst</span> -->
+                            <el-switch v-model="dumpast" width=20 active-text="DumpAST"></el-switch>
                         </el-menu-item>
                     </el-menu>
                     <!-- <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
@@ -60,6 +71,6 @@
             </el-footer>
         </el-container>
     </div>
-    <script type="module" src="./main.js"></script>
+    <script type="module" src="/js/main.js"></script>
 </body>
 </html>

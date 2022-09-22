@@ -1,21 +1,17 @@
-import { Scanner } from './scanner.js';
-import { Parser } from './parser.js';
+// TODO: improve the marker system
 
-const KEYWORDS = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN',
-                  'FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
-                  'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
-                  'OUTPUT'];
+import { Scanner, all_keywords } from './scanner.js';
+import { Parser } from './parser.js';
 
 Vue.use(ELEMENT);
 var app = new Vue({
     el: '#app',
     data: {
         dumpast: false,
-        current_line: 1,
-        current_char: 1,
-        output: '',
+        date: new Date(),
         editor: null,
         prefix: '$ ',
+        ast: null,
         terminal: null,
         fit_addon: null,
         cmd: ''
@@ -32,15 +28,16 @@ var app = new Vue({
                 )}`;
             }
         };
+        // initialize monaco editor
         require(['vs/editor/editor.main'], () => {
             monaco.languages.register({id: 'pseudocode'});
             monaco.languages.setMonarchTokensProvider('pseudocode', {
-                KEYWORDS,
+                all_keywords,
                 tokenizer: {
                     root: [
                         [/[a-zA-Z_]\w*/, {
                             cases: {
-                                '@KEYWORDS': 'keyword',
+                                '@all_keywords': 'keyword',
                                 '@default': 'variable',
                             }
                         }],
@@ -69,7 +66,7 @@ var app = new Vue({
             monaco.languages.registerCompletionItemProvider('pseudocode', {
                 provideCompletionItems: (model, position) => {
                     const suggestions = [
-                        ...KEYWORDS.map(keyword => {
+                        ...all_keywords.map(keyword => {
                             return {
                                 label: keyword,
                                 kind: monaco.languages.CompletionItemKind.Keyword,
@@ -80,6 +77,7 @@ var app = new Vue({
                     return { suggestions: suggestions };
                 }
             });
+            // create the editor
             this.editor = monaco.editor.create(this.$refs.editor, {
                 language: 'pseudocode',
                 fontSize: '18px',
@@ -90,10 +88,10 @@ var app = new Vue({
 
         this.terminal = new Terminal({
             rendererType: "dom",
-            rows: 15,
+            rows: 16,
             theme: {
                 foreground: "white",
-                background: "#919399"
+                background: "#696969"
             }
         });
         this.terminal.open(this.$refs.terminal);
@@ -147,12 +145,29 @@ var app = new Vue({
                 if (ast != null) {
                     // this.terminal.writeln('Parsing completed');
                     this.dumpast ? ast.dump('') : null;
-                    ast.evaluate();
+                    let start = new Date().getTime();
+                    try {
+                        ast.evaluate();
+                    } catch (e) {
+                        this.report(e.toString());
+                        return;
+                    }
+                    let end = new Date().getTime();
+                    let time = end - start;
+                    this.terminal.writeln('Execution completed in ' + time + 'ms');
                 }
                 // cannot write in execute_cmd() for unknown reason
                 this.terminal.write(this.prefix);
             }
         },
+        stop(){
+
+        },
+        // switch_dump() {
+        //     this.dumpast = !this.dumpast;
+        //     this.switch_type = this.dumpast ? 'el-icon-open' : 'el-icon-turn-off';
+        //     this.switch_color = this.dumpast ? '#696969' : '#909399';
+        // },
         execute_cmd() {
             if (this.cmd == 'help') {
                 this.terminal.writeln('help: show help');
@@ -172,8 +187,19 @@ var app = new Vue({
                 this.terminal.write(this.prefix);
             }
         },
+        set_mark(e) {
+            this.markers.push({
+                startLineNumber: e.current_line,
+                endLineNumber: e.current_line,
+                startColumn: e.current_char,
+                endColumn: e.current_char + 1,
+                message: e.msg,
+                severity: monaco.MarkerSeverity.Error
+            });
+            monaco.editor.setModelMarkers(this.editor.getModel(), 'pseudocode', this.markers);
+        },
         report(err_msg) {
-            this.terminal.write(err_msg);
+            this.terminal.writeln(err_msg);
             this.terminal.write(this.prefix);
         }
     }

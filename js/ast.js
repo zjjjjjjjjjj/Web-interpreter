@@ -1,8 +1,12 @@
+// TODO: Improve type system
+// TODO: Maybe improve Arrays(lower bound starts from none zero).....
+
 import { app } from './main.js';
-import { Variable } from './type.js';
+import { Variable, Array } from './type.js';
 import { Error } from './error.js';
 
 var named_values = {};
+var named_arrays = {};
 
 class ProgramAST {
     constructor() {
@@ -24,6 +28,10 @@ class ProgramAST {
         }
         return;
     }
+    
+    stop() {
+        throw new Error('User stopped the program');
+    }
 }
 
 class VarDeclAST {
@@ -41,7 +49,7 @@ class VarDeclAST {
     }
 
     evaluate() {
-        named_values[this.ident] = new Variable(null, this.type);
+        named_values[this.ident] = new Variable(this.type);
         return;
     }
 
@@ -50,6 +58,34 @@ class VarDeclAST {
         return;
     }
 }
+
+class ArrDeclAST {
+    constructor(ident, type, lower, upper) {
+        this.ident = ident;
+        if (type == 'INTEGER' || type == 'REAL') {
+            this.type = 'number';
+        }
+        else if (type == 'STRING' || type == 'CHAR') {
+            this.type = 'string';
+        }
+        else if (type == 'BOOLEAN') {
+            this.type = 'boolean';
+        }
+        this.lower = lower;
+        this.upper = upper;
+    }
+
+    evaluate() {
+        named_arrays[this.ident] = new Array(this.type, this.lower, this.upper);
+        return;
+    }
+
+    dump(prefix) {
+        app.terminal.writeln(prefix + 'ArrayDeclAST ' + this.ident + ' ' + this.type + ' ' + this.lower + '-' + this.upper);
+        return;
+    }
+}
+
 
 class VarAssignAST {
     constructor(ident, expr) {
@@ -73,6 +109,41 @@ class VarAssignAST {
 
     dump(prefix) {
         app.terminal.writeln(prefix + 'VarAssignAST: ' + this.ident);
+        this.expr.dump(prefix + '  ');
+        return;
+    }
+}
+
+
+class ArrAssignAST {
+    constructor(ident, index, expr) {
+        this.ident = ident;
+        this.index = index;
+        this.expr = expr;
+    }
+
+    evaluate() {
+        let index = this.index.evaluate();
+        let value = this.expr.evaluate();
+        if (this.ident in named_arrays) {
+            if (typeof(index) == 'number' && index >= named_arrays[this.ident].lower && index <= named_arrays[this.ident].upper) {
+                if (typeof(value) == named_arrays[this.ident].type)
+                    named_arrays[this.ident].values[index] = value;
+                else
+                    throw new Error('Type mismatch in assignment for Array ' + this.ident);
+            }
+            else
+                throw new Error('Index out of bounds for Array ' + this.ident);
+        }
+        else {
+            throw new Error("Array '" + this.ident + "' is not declared");
+        }
+        return;
+    }
+
+    dump(prefix) {
+        app.terminal.writeln(prefix + 'ArrAssignAST: ' + this.ident);
+        this.index.dump(prefix + '  ');
         this.expr.dump(prefix + '  ');
         return;
     }
@@ -186,11 +257,34 @@ class VarExprAST {
         if (this.ident in named_values && named_values[this.ident].value != null) 
             return named_values[this.ident].value;
         throw new Error("Variable '" + this.ident + "' is not defined");
-        return null;
     }
 
     dump(prefix) {
         app.terminal.writeln(prefix + 'VarExprAST: ' + this.ident);
+        return;
+    }
+}
+
+class ArrExprAST {
+    constructor(ident, index) {
+        this.ident = ident;
+        this.index = index;
+    }
+
+    evaluate() {
+        if (this.ident in named_arrays && named_arrays[this.ident].values != null) {
+            let index = this.index.evaluate();
+            if (index >= named_arrays[this.ident].lower && index <= named_arrays[this.ident].upper)
+                return named_arrays[this.ident].values[index];
+            else
+                throw new Error("Array index out of bounds");
+        }
+        throw new Error("Array '" + this.ident + "' is not defined");
+    }
+
+    dump(prefix) {
+        app.terminal.writeln(prefix + 'ArrExprAST: ' + this.ident);
+        this.index.dump(prefix + '  ');
         return;
     }
 }
@@ -368,11 +462,14 @@ class OutputAST {
 export {
     ProgramAST,
     VarDeclAST,
+    ArrDeclAST,
     VarAssignAST,
+    ArrAssignAST,
     IfAST,
     WhileAST,
     ForAST,
     VarExprAST,
+    ArrExprAST,
     UnaryExprAST,
     BinaryExprAST,
     NumberAST,
