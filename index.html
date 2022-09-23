@@ -43,8 +43,27 @@
                 <h1>Pseudocode interpreter</h1>
             </el-header>
             <el-container>
-                <el-aside width="auto">
-                    <el-menu>
+                <el-aside width="auto" style="text-align:center">
+                    <el-row style="margin:20px 10px">
+                        <el-button @click="run">run</el-button>
+                    </el-row>
+                    <el-row style="margin:20px 10px">
+                        <el-button disabled>stop</el-button>
+                    </el-row>
+                    <el-row style="margin:30px 10px">
+                        <el-switch v-model="dumpast" width=20 active-text="DumpAST"></el-switch>
+                    </el-row>
+                    <el-row>
+                        <el-upload
+                         action
+                         :multiple="false"
+                         accept=".pc"
+                         :on-change="handle_change"
+                         :auto-upload="false">
+                            <el-button>Upload</el-button>
+                        </el-upload>
+                    </el-row>
+                    <!-- <el-menu>
                         <el-menu-item index="1" @click="run">
                             <i class="el-icon-caret-right"></i>
                             <span>Run</span>
@@ -54,13 +73,9 @@
                             <span>Stop</span>
                         </el-menu-item>
                         <el-menu-item index="3">
-                            <!-- <i v-bind:class="switch_type" :style="{color:switch_color}"></i>
-                            <span>DumpAst</span> -->
                             <el-switch v-model="dumpast" width=20 active-text="DumpAST"></el-switch>
                         </el-menu-item>
-                    </el-menu>
-                    <!-- <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
-                    <el-button type="info" @click="run" plain style="margin:0px 10px">run</el-button> -->
+                    </el-menu> -->
                 </el-aside>
                 <el-main height="auto">
                     <div ref="editor" class="main"></div>

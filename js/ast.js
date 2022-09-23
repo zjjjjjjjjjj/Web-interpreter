@@ -274,8 +274,11 @@ class ArrExprAST {
     evaluate() {
         if (this.ident in named_arrays && named_arrays[this.ident].values != null) {
             let index = this.index.evaluate();
-            if (index >= named_arrays[this.ident].lower && index <= named_arrays[this.ident].upper)
-                return named_arrays[this.ident].values[index];
+            if (index >= named_arrays[this.ident].lower && index <= named_arrays[this.ident].upper) {
+                let value = named_arrays[this.ident].values[index];
+                console.log(value);
+                return value;
+            }
             else
                 throw new Error("Array index out of bounds");
         }

@@ -11,13 +11,15 @@ var app = new Vue({
         date: new Date(),
         editor: null,
         prefix: '$ ',
+        file: null,
+        file_content: null,
         ast: null,
         terminal: null,
         fit_addon: null,
         cmd: ''
     },
     mounted() {
-        require.config({paths: {'vs': 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs'}});
+        require.config({ paths: { 'vs': 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs' } });
         window.MonacoEnvironment = {
             getWorkerUrl: function (workerId, label) {
                 return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
@@ -201,6 +203,39 @@ var app = new Vue({
         report(err_msg) {
             this.terminal.writeln(err_msg);
             this.terminal.write(this.prefix);
+        },
+        handle_change(file) {
+            this.file_content = file.raw;
+            let file_name = file.name;
+            let file_type = file_name.substring(file_name.lastIndexOf('.') + 1);
+            if (this.file_content) {
+                if (file_type === "pc") {
+                    // weird problem...................
+                    this.import_file(this.file_content);
+                } 
+                else {
+                    this.$message({
+                        type: "warning",
+                        message: "incorrect file type"
+                    });
+                    console.log('error 1');
+                }
+            }
+            else {
+                console.log('error 2');
+                this.$message({
+                type: "warning",
+                message: "please select a file"
+                });
+            }
+        },
+        import_file(obj) {
+            let _this = this;
+            let reader = new FileReader();
+            reader.readAsText(obj);
+            reader.onload = function() {
+                _this.editor.setValue(reader.result);
+            }
         }
     }
 });
