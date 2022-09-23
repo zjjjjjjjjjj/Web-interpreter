@@ -1,23 +1,21 @@
+import { Error } from "./error.js";
+
+
 const WHITESPACE = /\s/;
 const NUMBERS = /[0-9]/;
 const SINGLEOPERATORS = /[+\-*/()\[\]=<>:]/;
 const DOUBLEOPERATORS = ['<-', '<=', '>=', '<>'];
 const LETTERS = /[a-z]/i;
 const BOOLEANS = ['TRUE', 'FALSE'];
-const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE',
-                  'INTEGER', 'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
+const KEYWORDS = ['FUNCTION', 'ENDFUNCTION', 'PROCEDURE', 'ENDPROCEDURE', 'RETURNS', 'RETURN', 'CALL', 'DECLARE', 'ARRAY', 'OF',
+                  'IF', 'THEN', 'ELSE', 'ENDIF', 'WHILE', 'ENDWHILE', 'FOR', 'TO', 'STEP', 'NEXT', 'MOD', 'AND', 'OR', 'NOT',
                   'OUTPUT'];
 const TYPES = ['INTEGER', 'REAL', 'CHAR', 'STRING', 'BOOLEAN'];
 
 class Scanner {
-    constructor(input, terminal) {
+    constructor(input) {
         this.input = input;
-        this.terminal = terminal;
         this.current_line = 1;
-    }
-
-    error(err_msg, current_char) {
-        this.terminal.writeln(err_msg + ' at line ' + this.current_line + ':' + (current_char + 1));
     }
 
     scan() {
@@ -25,14 +23,12 @@ class Scanner {
         let lines = this.input.split('\n');
         for (let line of lines) {
             let tokens = this.tokenize_line(line);
-            if (tokens == null)
-                return null;
             all_tokens.push(...tokens);
             this.current_line++;
         }
-        if (all_tokens.length != 0) {
+        if (all_tokens.length != 0) 
             return all_tokens;
-        }
+        return null;
     }
 
     tokenize_line(line) {
@@ -103,8 +99,7 @@ class Scanner {
                     char = line[++current];
                 }
                 if (current == line.length) {
-                    this.error('Non-terminated string', current);
-                    return null;
+                    throw new Error('Unterminated string', this.current_line, current + 1);
                 }
                 else {
                     current++;
@@ -120,12 +115,10 @@ class Scanner {
                     char = line[++current];
                 }
                 if (current == line.length) {
-                    this.error('Non-terminated string', current);
-                    return null;
+                    throw new Error('Unterminated char', this.current_line, current + 1);
                 }
                 else if (value.length > 1) {
-                    this.error('Char must be a single character', current);
-                    return null;
+                    throw new Error('Char must be a single character', this.current_line, current + 1);
                 }
                 else {
                     current++;
@@ -133,10 +126,16 @@ class Scanner {
                 }
             }
             else {
-                this.error('Unexpected character', current);
-                return null;
+                throw new Error('Unexpected character', this.current_line, current + 1);
             }
         }
         return tokens;
     }
+}
+
+const all_keywords = KEYWORDS.concat(TYPES);
+
+export {
+    Scanner,
+    all_keywords
 }

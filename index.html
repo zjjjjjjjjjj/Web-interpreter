@@ -6,15 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pseudocode interpreter</title>
 
-    <script type="text/javascript" src="./scanner.js"></script>
-    <script type="text/javascript" src="./parser.js"></script>
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.5.0/css/xterm.css" />
+    <link rel="stylesheet" href="/theme/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.5.0/css/xterm.css">
 	<script src="https://cdn.jsdelivr.net/npm/xterm@4.5.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.6.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.0/index.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.10/index.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/loader.min.js"></script>
-    <link rel="stylesheet" href="./style.css">
 
     <style>
         .el-textarea>textarea {
@@ -31,6 +29,11 @@
             max-height: 100%;
             overflow: hidden;
         }
+
+        .options {
+            margin-bottom: 10px;
+        }
+        
     </style>
 </head>
 <body>
@@ -38,123 +41,51 @@
         <el-container>
             <el-header height="auto" style="text-align:center">
                 <h1>Pseudocode interpreter</h1>
-                <el-switch v-model="dumpast" active-text="DumpAST" style="margin:0px 10px"></el-switch>
-                <el-button type="info" @click="run" style="margin:0px 10px" plain>run</el-button>
             </el-header>
-            <el-main height="auto">
-                <div ref="editor" class="main"></div>
-            </el-main>
-            <el-footer height="200px">
+            <el-container>
+                <el-aside width="auto" style="text-align:center">
+                    <el-row style="margin:20px 10px">
+                        <el-button @click="run">run</el-button>
+                    </el-row>
+                    <el-row style="margin:20px 10px">
+                        <el-button disabled>stop</el-button>
+                    </el-row>
+                    <el-row style="margin:30px 10px">
+                        <el-switch v-model="dumpast" width=20 active-text="DumpAST"></el-switch>
+                    </el-row>
+                    <el-row>
+                        <el-upload
+                         action
+                         :multiple="false"
+                         accept=".pc"
+                         :on-change="handle_change"
+                         :auto-upload="false">
+                            <el-button>Upload</el-button>
+                        </el-upload>
+                    </el-row>
+                    <!-- <el-menu>
+                        <el-menu-item index="1" @click="run">
+                            <i class="el-icon-caret-right"></i>
+                            <span>Run</span>
+                        </el-menu-item>
+                        <el-menu-item index="2" @click="stop" disabled>
+                            <i class="el-icon-circle-close"></i>
+                            <span>Stop</span>
+                        </el-menu-item>
+                        <el-menu-item index="3">
+                            <el-switch v-model="dumpast" width=20 active-text="DumpAST"></el-switch>
+                        </el-menu-item>
+                    </el-menu> -->
+                </el-aside>
+                <el-main height="auto">
+                    <div ref="editor" class="main"></div>
+                </el-main>
+            </el-container>
+            <el-footer height="300px">
                 <div ref="terminal"></div>
             </el-footer>
         </el-container>
     </div>
-    <script>
-        Vue.use(ELEMENT);
-        var app = new Vue({
-            el: '#app',
-            data: {
-                activeNames: ['3'],
-                dumpast: false,
-                curLevel: 1,
-                output: '',
-                editor: null,
-                terminal: null,
-                prefix: '$ ',
-                cmd: ''
-            },
-            mounted() {
-                require.config({paths: {'vs': 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs'}});
-                window.MonacoEnvironment = {
-                    getWorkerUrl: function (workerId, label) {
-                        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-                            self.MonacoEnvironment = {
-                            baseUrl: 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min'
-                            };
-                            importScripts('https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.23.0/min/vs/base/worker/workerMain.js');`
-                        )}`;
-                    }
-                };
-                require(['vs/editor/editor.main'], () => {
-                    this.editor = monaco.editor.create(this.$refs.editor, {
-                        language: "c",
-                        automaticLayout: true
-                    });
-                });
-                this.terminal = new Terminal({
-                    rendererType: "dom",
-                    rows: 10,
-                    theme: {
-                        foreground: "white",
-                        background: "#919399"
-                    }
-                });
-                this.terminal.open(this.$refs.terminal);
-                this.terminal.writeln('Welcome to the Pseudocode interpreter');
-                this.terminal.write(this.prefix);
-
-                this.terminal.onKey(e => {
-                    code = e.domEvent.which;
-                    if (code === 13){
-                        this.terminal.writeln(e.key);
-                        this.execute_cmd();
-                        this.cmd = '';
-                    }
-                    else if (code === 8) {
-                        this.terminal.write('\b \b');
-                        this.cmd = this.cmd.substring(0, this.cmd.length - 1);
-                    }
-                    else {
-                        this.cmd = this.cmd + e.key;
-                        this.terminal.write(e.key);
-                    }
-                })
-            },
-            methods: {
-                run() {
-                    this.code = this.editor?.getValue();
-                    let tokens = null;
-                    if (this.code) {
-                        let scanner = new Scanner(this.code, this.terminal);
-                        tokens = scanner.scan();
-                        console.log(tokens);
-                    }
-                    if (tokens != null) {
-                        // for (let ts of t) {
-                        //     this.terminal.writeln(ts['type'].toString() + ' ' + tss['value'].toString());
-                        // }
-                        // this.terminal.writeln('Tokenization completed');
-                        let parser = new Parser(tokens, this.terminal);
-                        let ast = parser.parse();
-                        if (ast != null) {
-                            // this.terminal.writeln('Parsing completed');
-                            this.dumpast ? ast.dump('') : null;
-                            ast.evaluate();
-                        }
-                        this.terminal.write(this.prefix);
-                    }
-                },
-                execute_cmd() {
-                    if (this.cmd == 'help') {
-                        this.terminal.writeln('help: show help');
-                        this.terminal.writeln('run: run the code');
-                        this.terminal.writeln('clear/cls: clear the terminal');
-                        this.terminal.write(this.prefix);
-                    }
-                    else if (this.cmd == 'run') {
-                        this.run();
-                    }
-                    else if (this.cmd == 'clear' || this.cmd == 'cls') {
-                        this.terminal.clear();
-                        this.terminal.write(this.prefix);
-                    }
-                    else {
-                        this.terminal.writeln(this.cmd + ': Command not found');
-                        this.terminal.write(this.prefix);
-                    }
-                }
-            }
-        });
-    </script>
+    <script type="module" src="/js/main.js"></script>
 </body>
 </html>

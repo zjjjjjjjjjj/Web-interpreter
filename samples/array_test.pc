@@ -1,0 +1,10 @@
+DECLARE i: ARRAY[0:9] OF INTEGER
+DECLARE j: INTEGER
+
+FOR j <- 0 TO 9
+    i[j] <- j
+NEXT j
+
+FOR j <- 0 TO 9
+    OUTPUT i[j]
+NEXT j
